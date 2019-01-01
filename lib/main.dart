@@ -1,9 +1,11 @@
-import 'dart:convert';
+import 'dart:async';
+import 'dart:convert' show json;
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:bad_dad_jokes/joke_service.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -37,27 +39,42 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+class DadTypes {
+
+  String name;
+  Color color;
+
+  static const YELLOW = Color(0xfffbed96);
+  static const BLUE = Color(0xffabecd6);
+  static const BLUE_DEEP = Color(0xffA8CBFD);
+  static const BLUE_LIGHT = Color(0xffAED3EA);
+  static const PURPLE = Color(0xffccc3fc);
+  static const RED = Color(0xffF2A7B3);
+  static const GREEN = Color(0xffc7e5b4);
+  static const RED_LIGHT = Color(0xffFFC3A0);
+
+  static const List<String> typesOfDad = ['Cranky', 'Angry', 'Hungry', 'Calm', 'Sleepy', 'Corny'];
+
+  static const List<Color> colorsOfDad = [PURPLE, RED, BLUE, GREEN, BLUE_LIGHT, YELLOW];
+
+  static String getType() {
+    return typesOfDad[Random().nextInt(typesOfDad.length - 1)];
+  }
+
+  DadTypes.random() {
+    var idx = Random().nextInt(typesOfDad.length - 1);
+    this.name = typesOfDad[idx];
+    this.color = colorsOfDad[idx];
+  }
+
+}
+
 class _MyHomePageState extends State<MyHomePage> {
-  List<String> typesOfDad = [
-    'Cranky',
-    'Angry',
-    'Hungry',
-    'Calm',
-    'Sleepy',
-    'Corny'
-  ];
   GlobalKey _globalKey = new GlobalKey();
+  final service = JokeService();
 
   Future<String> getAJoke() async {
-    String jokeData;
-    var res = await http.get('https://icanhazdadjoke.com/',
-        headers: {"Accept": "application/json"}).then((joke) {
-      if (joke.statusCode == 200) {
-        print(joke.body);
-        jokeData = json.decode(joke.body)['joke'];
-      }
-    });
-    return jokeData;
+    return service.getOne();
   }
 
   @override
@@ -70,40 +87,8 @@ class _MyHomePageState extends State<MyHomePage> {
             SafeArea(
               child: snapshot.hasData &&
                       snapshot.connectionState == ConnectionState.done
-                  ? RepaintBoundary(
-                      key: _globalKey,
-                      child: Container(
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              QuoteImage(),
-                              Text(
-                                '${snapshot.data}',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontFamily: 'Roboto slab', fontSize: 25.0),
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10.0),
-                                child: Text(
-                                  'A ${typesOfDad[Random().nextInt(typesOfDad.length - 1)]} Dad',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontFamily: 'League spartan',
-                                      color: Colors.blueAccent),
-                                ),
-                              ),
-                              QuoteImage(
-                                isTopImage: false,
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
+                  ? RepaintBoundary(key: _globalKey,
+                      child: _buildJoke(snapshot.data, DadTypes.random()),
                     )
                   : Container(),
             ),
@@ -127,6 +112,38 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Container _buildJoke(String joke, DadTypes typeOfDad) {
+    return Container(
+      color: typeOfDad.color, // Colors.white24,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            QuoteImage(),
+            Text(
+              '$joke',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Roboto slab', fontSize: 25.0),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10.0),
+              child: Text(
+                'A ${typeOfDad.name} Dad',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontFamily: 'League spartan', color: Colors.blueAccent),
+              ),
+            ),
+            QuoteImage(
+              isTopImage: false,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget buildBottomBar(String joke, bool enabled) {
     print(enabled);
     return SizedBox(
@@ -139,72 +156,75 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: IconButton(
-                icon: Icon(
-                  Icons.share,
-                ),
-                color: Colors.black.withOpacity(0.5),
-                disabledColor: Colors.black12,
-                onPressed: enabled
-                    ? () async {
-                        RenderRepaintBoundary boundary =
-                            _globalKey.currentContext.findRenderObject();
-                        ui.Image image =
-                            await boundary.toImage(pixelRatio: 3.0);
-                        ByteData byteData = await image.toByteData(
-                            format: ui.ImageByteFormat.png);
-                        await EsysFlutterShare.shareImage(
-                            'img.png', byteData, 'title');
-                      }
-                    : null,
-                tooltip: 'Share Image',
-              ),
+              child: _buildShareButton(enabled),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: IconButton(
-                icon: Icon(
-                  Icons.content_copy,
-                ),
-                color: Colors.black.withOpacity(0.5),
-                disabledColor: Colors.black12,
-                onPressed: enabled
-                    ? () {
-                        Clipboard.setData(ClipboardData(text: joke))
-                            .then((data) {
-                          Scaffold.of(context).showSnackBar(SnackBar(
-                            content: Text(
-                              'Joke coppied to clipboard',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            duration: Duration(seconds: 2),
-                            backgroundColor: Colors.blueAccent,
-                          ));
-                        });
-                      }
-                    : null,
-                tooltip: 'Copy to clipboard',
-              ),
+              child: _buildCopyButton(enabled, joke),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: IconButton(
-                icon: Icon(
-                  Icons.refresh,
-                ),
-                tooltip: 'Crack a new one!',
-                color: Colors.black.withOpacity(0.5),
-                disabledColor: Colors.black12,
-                onPressed: enabled
-                    ? () {
-                        setState(() {});
-                      }
-                    : null,
-              ),
+              child: _buildRefreshButton(enabled),
             )
           ],
         ),
       ),
+    );
+  }
+
+  IconButton _buildRefreshButton(bool enabled) {
+    return IconButton(
+      icon: Icon(Icons.refresh),
+      tooltip: 'Crack a new one!',
+      color: Colors.black.withOpacity(0.5),
+      disabledColor: Colors.black12,
+      onPressed: enabled
+          ? () {
+              setState(() {});
+            }
+          : null,
+    );
+  }
+
+  IconButton _buildCopyButton(bool enabled, String joke) {
+    return IconButton(
+      icon: Icon(Icons.content_copy),
+      color: Colors.black.withOpacity(0.5),
+      disabledColor: Colors.black12,
+      onPressed: enabled
+          ? () {
+              Clipboard.setData(ClipboardData(text: joke)).then((data) {
+                Scaffold.of(context).showSnackBar(SnackBar(
+                  content: Text(
+                    'Joke coppied to clipboard',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Colors.blueAccent,
+                ));
+              });
+            }
+          : null,
+      tooltip: 'Copy to clipboard',
+    );
+  }
+
+  IconButton _buildShareButton(bool enabled) {
+    return IconButton(
+      icon: Icon(Icons.share),
+      color: Colors.black.withOpacity(0.5),
+      disabledColor: Colors.black12,
+      onPressed: enabled
+          ? () async {
+              RenderRepaintBoundary boundary =
+                  _globalKey.currentContext.findRenderObject();
+              ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+              ByteData byteData =
+                  await image.toByteData(format: ui.ImageByteFormat.png);
+              await EsysFlutterShare.shareImage('img.png', byteData, 'title');
+            }
+          : null,
+      tooltip: 'Share Image',
     );
   }
 }

@@ -1,6 +1,7 @@
 
 import 'dart:async';
 
+import 'package:bad_dad_jokes/joke.dart';
 import 'package:bad_dad_jokes/joke_service.dart';
 
 abstract class BaseBloc {
@@ -9,11 +10,11 @@ abstract class BaseBloc {
 
 class JokeBloc implements BaseBloc {
 
-  final StreamController<String> _controller = StreamController<String>.broadcast();
+  final StreamController<JokeModel> _controller = StreamController<JokeModel>.broadcast();
   final JokeService _service = JokeService();
 
-  Stream<String> get output => _controller.stream;
-  Sink<String> get _input => _controller.sink;
+  Stream<JokeModel> get output => _controller.stream;
+  Sink<JokeModel> get _input => _controller.sink;
 
   void getRandomJoke() {
     _input.add(null);

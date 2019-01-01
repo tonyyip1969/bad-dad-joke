@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert' show json;
+import 'package:bad_dad_jokes/joke.dart';
 import 'package:http/http.dart' as http;
 
 // {
@@ -13,14 +14,16 @@ class JokeService {
   final String _apiUrl = 'https://icanhazdadjoke.com/';
   final _headers = {"Accept": "application/json"};
 
-  Future<String> getOne() async {
-    String jokeData;
-    await http.get(_apiUrl, headers: _headers).then((joke) {
-      if (joke.statusCode == 200) {
-        print(joke.body);
-        jokeData = json.decode(joke.body)['joke'];
+  Future<JokeModel> getOne() async {
+    JokeModel joke;
+    await http.get(_apiUrl, headers: _headers).then((data) {
+      if (data.statusCode == 200) {
+        print(data.body);
+        var jokeData = json.decode(data.body)['joke'];
+
+        joke = JokeModel(jokeData);
       }
     });
-    return jokeData;
+    return joke;
   }
 }

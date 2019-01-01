@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:bad_dad_jokes/dad_types.dart';
+import 'package:bad_dad_jokes/joke.dart';
 import 'package:bad_dad_jokes/joke_bloc.dart';
 import 'package:bad_dad_jokes/joke_widget.dart';
 
@@ -58,20 +58,20 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
 
-    return StreamBuilder<String>(
+    return StreamBuilder<JokeModel>(
       stream: bloc.output,
-      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+      builder: (BuildContext context, AsyncSnapshot<JokeModel> snapshot) {
         if (snapshot.hasData) {
           return Stack(
             children: <Widget>[
               SafeArea(
                 child: RepaintBoundary(key: _globalKey,
-                        child: Joke(text: snapshot.data, typeOfDad: DadTypes.random()),
+                        child: Joke(jokeModel: snapshot.data),
                       ),
               ),
               Align(
                 alignment: Alignment.bottomCenter,
-                child: buildBottomBar(snapshot.data, snapshot.hasData),
+                child: buildBottomBar(snapshot.data.text, snapshot.hasData),
               ),
             ],
           );

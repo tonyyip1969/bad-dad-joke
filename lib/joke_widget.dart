@@ -1,17 +1,17 @@
-import 'package:bad_dad_jokes/dad_types.dart';
+import 'package:bad_dad_jokes/joke.dart';
 import 'package:flutter/material.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 class Joke extends StatelessWidget {
-  final text;
-  final DadTypes typeOfDad;
 
-  const Joke({Key key, this.text, this.typeOfDad}) : super(key: key);
+  final JokeModel jokeModel;
+
+  const Joke({Key key, this.jokeModel}) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: typeOfDad.color, // Colors.white24,
+      color: jokeModel.backgroundColor, // Colors.white24,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -19,14 +19,14 @@ class Joke extends StatelessWidget {
           children: <Widget>[
             QuoteImage(),
             Text(
-              '$text',
+              '${jokeModel.text}',
               textAlign: TextAlign.center,
               style: TextStyle(fontFamily: 'Roboto slab', fontSize: 25.0),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: Text(
-                'A ${typeOfDad.name} Dad',
+                'A ${jokeModel.type} Dad',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontFamily: 'League spartan', color: Colors.blueAccent),

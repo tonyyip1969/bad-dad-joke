@@ -1,11 +1,10 @@
-import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:bad_dad_jokes/dad_types.dart';
-import 'package:bad_dad_jokes/joke_service.dart';
+import 'package:bad_dad_jokes/joke_bloc.dart';
 import 'package:bad_dad_jokes/joke_widget.dart';
+
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,7 +13,9 @@ import 'package:flutter/services.dart';
 void main() {
   SystemChrome.setPreferredOrientations(
           [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown])
-      .then((orientation) => runApp(MyApp()));
+      .then((orientation) => runApp(
+        MyApp()
+      ));
 }
 
 class MyApp extends StatelessWidget {
@@ -39,42 +40,45 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   GlobalKey _globalKey = new GlobalKey();
-  final service = JokeService();
+  
+  final bloc = JokeBloc();
 
-  Future<String> getAJoke() async {
-    return service.getOne();
+  @override
+  void initState() {
+    super.initState();
+    bloc.getRandomJoke();
+  }
+
+  @override
+  void dispose() {
+    bloc.dispose();
+    super.dispose();  
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: getAJoke(),
-      builder: (context, snapshot) {
-        return Stack(
-          children: <Widget>[
-            SafeArea(
-              child: snapshot.hasData &&
-                      snapshot.connectionState == ConnectionState.done
-                  ? RepaintBoundary(key: _globalKey,
-                      child: Joke(text: snapshot.data, typeOfDad: DadTypes.random()),
-                    )
-                  : Container(),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: buildBottomBar(
-                  snapshot.data,
-                  snapshot.hasData &&
-                      snapshot.connectionState == ConnectionState.done),
-            ),
-            snapshot.hasData && snapshot.connectionState == ConnectionState.done
-                ? Container()
-                : Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.0,
-                    ),
-                  )
-          ],
+
+    return StreamBuilder<String>(
+      stream: bloc.output,
+      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+        if (snapshot.hasData) {
+          return Stack(
+            children: <Widget>[
+              SafeArea(
+                child: RepaintBoundary(key: _globalKey,
+                        child: Joke(text: snapshot.data, typeOfDad: DadTypes.random()),
+                      ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: buildBottomBar(snapshot.data, snapshot.hasData),
+              ),
+            ],
+          );
+        }
+
+        return Center(
+          child: CircularProgressIndicator(),
         );
       },
     );
@@ -114,11 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
       tooltip: 'Crack a new one!',
       color: Colors.black.withOpacity(0.5),
       disabledColor: Colors.black12,
-      onPressed: enabled
-          ? () {
-              setState(() {});
-            }
-          : null,
+      onPressed: enabled ? bloc.getRandomJoke : null,
     );
   }
 

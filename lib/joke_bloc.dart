@@ -10,15 +10,20 @@ abstract class BaseBloc {
 class JokeBloc implements BaseBloc {
 
   final StreamController<String> _controller = StreamController<String>.broadcast();
-  final JokeService service = JokeService();
+  final JokeService _service = JokeService();
 
   Stream<String> get output => _controller.stream;
   Sink<String> get _input => _controller.sink;
 
   void getRandomJoke() {
-    service.getOne().then((data) => _input.add(data));
+    _input.add(null);
+    _service.getOne().then((data) {
+      _input.add(data);
+    });
   }
 
+  JokeBloc();
+  
   @override
   void dispose() {
     _controller.close();

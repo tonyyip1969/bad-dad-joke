@@ -1,17 +1,15 @@
 import 'dart:async';
-import 'dart:convert' show json;
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:bad_dad_jokes/dad_types.dart';
 import 'package:bad_dad_jokes/joke_service.dart';
+import 'package:bad_dad_jokes/joke_widget.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'package:transparent_image/transparent_image.dart';
 
 void main() {
   SystemChrome.setPreferredOrientations(
@@ -39,36 +37,6 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class DadTypes {
-
-  String name;
-  Color color;
-
-  static const YELLOW = Color(0xfffbed96);
-  static const BLUE = Color(0xffabecd6);
-  static const BLUE_DEEP = Color(0xffA8CBFD);
-  static const BLUE_LIGHT = Color(0xffAED3EA);
-  static const PURPLE = Color(0xffccc3fc);
-  static const RED = Color(0xffF2A7B3);
-  static const GREEN = Color(0xffc7e5b4);
-  static const RED_LIGHT = Color(0xffFFC3A0);
-
-  static const List<String> typesOfDad = ['Cranky', 'Angry', 'Hungry', 'Calm', 'Sleepy', 'Corny'];
-
-  static const List<Color> colorsOfDad = [PURPLE, RED, BLUE, GREEN, BLUE_LIGHT, YELLOW];
-
-  static String getType() {
-    return typesOfDad[Random().nextInt(typesOfDad.length - 1)];
-  }
-
-  DadTypes.random() {
-    var idx = Random().nextInt(typesOfDad.length - 1);
-    this.name = typesOfDad[idx];
-    this.color = colorsOfDad[idx];
-  }
-
-}
-
 class _MyHomePageState extends State<MyHomePage> {
   GlobalKey _globalKey = new GlobalKey();
   final service = JokeService();
@@ -88,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: snapshot.hasData &&
                       snapshot.connectionState == ConnectionState.done
                   ? RepaintBoundary(key: _globalKey,
-                      child: _buildJoke(snapshot.data, DadTypes.random()),
+                      child: Joke(text: snapshot.data, typeOfDad: DadTypes.random()),
                     )
                   : Container(),
             ),
@@ -109,38 +77,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         );
       },
-    );
-  }
-
-  Container _buildJoke(String joke, DadTypes typeOfDad) {
-    return Container(
-      color: typeOfDad.color, // Colors.white24,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            QuoteImage(),
-            Text(
-              '$joke',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Roboto slab', fontSize: 25.0),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0),
-              child: Text(
-                'A ${typeOfDad.name} Dad',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontFamily: 'League spartan', color: Colors.blueAccent),
-              ),
-            ),
-            QuoteImage(
-              isTopImage: false,
-            )
-          ],
-        ),
-      ),
     );
   }
 
@@ -225,39 +161,6 @@ class _MyHomePageState extends State<MyHomePage> {
             }
           : null,
       tooltip: 'Share Image',
-    );
-  }
-}
-
-class QuoteImage extends StatelessWidget {
-  final bool isTopImage;
-
-  const QuoteImage({Key key, this.isTopImage = true}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.5,
-      child: Padding(
-        padding: EdgeInsets.only(
-            top: isTopImage ? 0.0 : 10.0, bottom: isTopImage ? 10.0 : 0.0),
-        child: Align(
-          alignment: isTopImage ? Alignment.topLeft : Alignment.bottomRight,
-          child: SizedBox(
-            child: FadeInImage(
-              fadeInDuration: Duration(milliseconds: 300),
-              placeholder: MemoryImage(kTransparentImage),
-              fadeInCurve: Curves.easeInOut,
-              image: AssetImage(
-                isTopImage
-                    ? 'assets/images/left-quote.png'
-                    : 'assets/images/right-quote.png',
-              ),
-            ),
-            height: 80,
-          ),
-        ),
-      ),
     );
   }
 }
